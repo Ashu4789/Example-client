@@ -7,7 +7,8 @@ import StudentList1 from "./pages/examples/StudentList1";
 import UserCard from "./pages/practice/UserCard";
 import ProductList from "./pages/practice/ProductList";
 import EngineeringTeam from "./pages/practice/EngineeringTeam";
-
+import Student4 from "./pages/examples/Student4"; 
+import Student5 from "./pages/examples/Student5";
 
 const students = [
   { name: "Ashutosh", roll: "19", percentage: 99.9 },
@@ -45,6 +46,8 @@ function App() {
       <UserCard name="Abhisek" age="23" location="Patna" isPremium={true} />
       <ProductList products={products} />
       <EngineeringTeam employees={employees} />
+      <Student4 />
+      <Student5 />
     </>
   )
 };
