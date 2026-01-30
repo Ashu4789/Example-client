@@ -1,6 +1,13 @@
-import { Link} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-function Header() {
+function Header({ userDetails, onLogout }) {
+    const navigate = useNavigate();
+    
+    const handleLogout = () => {
+      onLogout();
+      
+    };
+    
     return (
         <nav className="navbar navbar-expand-lg bg-body-tertiary">
   <div className="container-fluid">
@@ -25,59 +32,32 @@ function Header() {
             Home
           </Link>
         </li>
-        <li className="nav-item">
-          <Link className="nav-link" to="/login">
-            Login
-          </Link>
-        </li>
-        <li className="nav-item dropdown">
-          <a
-            className="nav-link dropdown-toggle"
-            href="#"
-            role="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            Dropdown
-          </a>
-          <ul className="dropdown-menu">
-            <li>
-              <a className="dropdown-item" href="#">
-                Action
-              </a>
+        {!userDetails && (
+          <li className="nav-item">
+            <Link className="nav-link" to="/login">
+              Login
+            </Link>
+          </li>
+        )}
+        {userDetails && (
+          <>
+            <li className="nav-item">
+              <Link className="nav-link" to="/dashboard">
+                Dashboard
+              </Link>
             </li>
-            <li>
-              <a className="dropdown-item" href="#">
-                Another action
-              </a>
+            <li className="nav-item">
+              <button 
+                className="nav-link btn btn-link" 
+                onClick={handleLogout}
+                style={{ textDecoration: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Logout
+              </button>
             </li>
-            <li>
-              <hr className="dropdown-divider" />
-            </li>
-            <li>
-              <a className="dropdown-item" href="#">
-                Something else here
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li className="nav-item">
-          <a className="nav-link disabled" aria-disabled="true">
-            Disabled
-          </a>
-        </li>
+          </>
+        )}
       </ul>
-      <form className="d-flex" role="search">
-        <input
-          className="form-control me-2"
-          type="search"
-          placeholder="Search"
-          aria-label="Search"
-        />
-        <button className="btn btn-outline-success" type="submit">
-          Search
-        </button>
-      </form>
     </div>
   </div>
 </nav>

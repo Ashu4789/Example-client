@@ -1,7 +1,9 @@
 import { useState } from "react";  
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-function Login() {
+function Login({setUser}) {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -48,8 +50,10 @@ function Login() {
         const config = { withCredentials: true };
         try {
             const response = await axios.post("http://localhost:5003/auth/login", body, config);
-            console.log(response);
+            console.log(response.data);
             setMessage("Login successful!");
+            setUser(response.data.user);
+            navigate("/dashboard");
         } catch (error) {
             console.error("Login failed:", error);
             setErrors({ form: "Login failed. Please check your credentials." });
