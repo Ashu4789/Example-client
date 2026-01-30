@@ -2,6 +2,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import SignUp from "./pages/SignUp";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useState, useEffect, use } from "react";
 import axios from "axios";
@@ -37,6 +38,7 @@ import axios from "axios";
       <Route path="/" element={userDetails ? (<Navigate to="/dashboard" />) : (<AppLayout userDetails={userDetails} onLogout={handleLogout}><Home /></AppLayout>)} />
       <Route path = "/login" element={userDetails ? <Navigate to="/dashboard" /> : (<AppLayout userDetails={userDetails} onLogout={handleLogout}><Login setUser={setUserDetails} /></AppLayout>)} />
       <Route path = "/dashboard" element={userDetails ? (<AppLayout userDetails={userDetails} onLogout={handleLogout}><Dashboard userDetails={userDetails} /></AppLayout>) : (<Navigate to="/login" />)} />
+      <Route path = "/signup" element={userDetails ? <Navigate to="/dashboard" /> : (<AppLayout userDetails={userDetails} onLogout={handleLogout}><SignUp setUser={setUserDetails} /></AppLayout>)} />
     </Routes>
   )
 };

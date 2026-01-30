@@ -105,7 +105,7 @@ function Login({setUser}) {
 
                             <div className="text-center">
                                 <a href="#" className="text-decoration-none me-3">Forgot Password?</a>
-                                <a href="#" className="text-decoration-none">Sign Up</a>
+                                <a href="/signup" className="text-decoration-none">Sign Up</a>
                             </div>
                         </div>
                     </div>

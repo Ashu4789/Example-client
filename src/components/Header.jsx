@@ -32,6 +32,11 @@ function Header({ userDetails, onLogout }) {
             Home
           </Link>
         </li>
+        <li className="nav-item">
+          <Link className="nav-link" to="/signup">
+            Sign Up
+          </Link>
+        </li>
         {!userDetails && (
           <li className="nav-item">
             <Link className="nav-link" to="/login">
