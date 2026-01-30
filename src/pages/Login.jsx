@@ -47,10 +47,9 @@ function Login() {
         };
         const config = { withCredentials: true };
         try {
-            const response = await axios.post("http://localhost:5000/api/auth/login", body, config);
-            console.log("Login successful:", response.data);
+            const response = await axios.post("http://localhost:5003/auth/login", body, config);
+            console.log(response);
             setMessage("Login successful!");
-            setErrors({});
         } catch (error) {
             console.error("Login failed:", error);
             setErrors({ form: "Login failed. Please check your credentials." });
