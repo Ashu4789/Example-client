@@ -1,153 +1,210 @@
-import { useState } from "react";  
+import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import {GoogleOAuthProvider, GoogleLogin} from '@react-oauth/google';
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { serverEndpoint } from "../config/appConfig";
+import { useDispatch } from "react-redux";
+import { SET_USER } from "../redux/user/action";
+import { Link } from "react-router-dom";
 
-function Login({setUser}) {
-    const navigate = useNavigate();
+function Login() {
+    const dispatch = useDispatch();
+
     const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
-
-  const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState("");
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setFormData({
-      ...formData,
-      [name]: value
+        email: "",
+        password: "",
     });
-  };
+    const [errors, setErrors] = useState({});
+    const [message, setMessage] = useState("");
 
-  const validate = () => {
-    let newErrors = {};
-    let isValid = true;
+    const handleChange = (event) => {
+        const name = event.target.name;
+        const value = event.target.value;
 
-    if (formData.email.length === 0) {
-      newErrors.email = "Email is required";
-      isValid = false;
-    }
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
+    };
 
-    if (formData.password.length === 0) {
-      newErrors.password = "Password is required";
-      isValid = false;
-    }
+    const validate = () => {
+        let newErrors = {};
+        let isValid = true;
 
-    setErrors(newErrors);
-    return isValid;
-  };
+        if (formData.email.length === 0) {
+            newErrors.email = "Email is required";
+            isValid = false;
+        }
 
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
+        if (formData.password.length === 0) {
+            newErrors.password = "Password is required";
+            isValid = false;
+        }
 
-    if (validate()) {
-        const body = {
-            email: formData.email,
-            password: formData.password
-        };
-        const config = { withCredentials: true };
-        try {
-            const response = await axios.post("http://localhost:5003/auth/login", body, config);
-            console.log(response.data);
-            setMessage("Login successful!");
-            setUser(response.data.user);
-            navigate("/dashboard");
-        } catch (error) {
-            console.error("Login failed:", error);
-            const serverMsg = error?.response?.data?.error || error?.response?.data?.message;
-            if (serverMsg) {
-                setErrors({ form: serverMsg });
-            } else {
-                setErrors({ form: "Login failed. Please check your credentials." });
+        setErrors(newErrors);
+        return isValid;
+    };
+
+    const handleFormSubmit = async (event) => {
+        // Prevent default behaviour of form which is to do complete page reload.
+        event.preventDefault();
+
+        if (validate()) {
+            try {
+                const body = {
+                    email: formData.email,
+                    password: formData.password,
+                };
+                const config = { withCredentials: true };
+                const response = await axios.post(
+                    `${serverEndpoint}/auth/login`,
+                    body,
+                    config
+                );
+                // setUser(response.data.user);
+                dispatch({
+                    type: SET_USER,
+                    payload: response.data.user,
+                });
+            } catch (error) {
+                console.log(error);
+                setErrors({
+                    message: "Something went wrong, please try again",
+                });
             }
-            setMessage("");
         }
-    }
-  };
-  const handleGoogleSuccess = async (authResponse) => {
-    try {
-        console.log('Google auth response', authResponse);
-        if (!authResponse?.credential) {
-            setErrors({ message: 'No credential received from Google' });
-            return;
-        }
-        const body = { idToken: authResponse.credential };
-        const response = await axios.post("http://localhost:5003/auth/google-auth", body, { withCredentials: true });
-        setUser(response.data.user);
-    } catch (error) {
-        console.error("Google SSO failed:", error);
-        setErrors({ message: "unable tp process google sso, please try again" });
-    }
+    };
 
-  };
-  const handleGoogleFailure = (error) => {
-    console.log('Google Login Failed',error);
-    setErrors({ message: "Something went wrong while performing google single sign on" });
-  };
+    const handleGoogleSuccess = async (authResponse) => {
+        try {
+            const body = {
+                idToken: authResponse?.credential,
+            };
+            const response = await axios.post(
+                `${serverEndpoint}/auth/google-auth`,
+                body,
+                { withCredentials: true }
+            );
+            dispatch({
+                type: SET_USER,
+                payload: response.data.user,
+            });
+        } catch (error) {
+            console.log(error);
+            setErrors({
+                message: "Unable to process google sso, please try again",
+            });
+        }
+    };
+
+    const handleGoogleFailure = (error) => {
+        console.log(error);
+        setErrors({
+            message:
+                "Something went wrong while performing google single sign-on",
+        });
+    };
+
     return (
-        <div className="container mt-5">
+        <div className="container py-5">
             <div className="row justify-content-center">
-                <div className="col-md-6">
-                    <div className="card shadow-lg">
+                <div className="col-md-5">
+                    {/* Main Login Card */}
+                    <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
                         <div className="card-body p-5">
-                            <h3 className="card-title text-center mb-4">Login to Continue</h3>
-                            {message && <div className="alert alert-success">{message}</div>}
-                            {errors.form && <div className="alert alert-danger">{errors.form}</div>}
-                            <div className="row justify-content-center mb-4">
-                                <div className="col-6 text-center">
+                            {/* Brand Header */}
+                            <div className="text-center mb-4">
+                                <h2 className="fw-bold text-dark">
+                                    Welcome{" "}
+                                    <span className="text-primary">Back</span>
+                                </h2>
+                                <p className="text-muted">
+                                    Login to manage your MergeMoney account
+                                </p>
+                            </div>
 
-                                    <form onSubmit={handleFormSubmit}>
-                                        <div className="mb-3">
-                                            <label htmlFor="email" className="form-label">Email</label>
-                                            <input
-                                                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                                                type="email"
-                                                id="email"
-                                                name="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                            />
-                                            {errors.email && <small className="text-danger d-block mt-1">{errors.email}</small>}
-                                        </div>
-
-                                        <div className="mb-3">
-                                            <label htmlFor="password" className="form-label">Password</label>
-                                            <input
-                                                className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                                                type="password"
-                                                id="password"
-                                                name="password"
-                                                value={formData.password}
-                                                onChange={handleChange}
-                                            />
-                                            {errors.password && <small className="text-danger d-block mt-1">{errors.password}</small>}
-                                        </div>
-
-                                        <button type="submit" className="btn btn-primary w-100 mb-3">
-                                            Login
-                                        </button>
-                                    </form>
+                            {/* Global Alerts */}
+                            {(message || errors.message) && (
+                                <div className="alert alert-danger py-2 small border-0 shadow-sm mb-4">
+                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                                    {message || errors.message}
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="text-center">
-                                <a href="#" className="text-decoration-none me-3">Forgot Password?</a>
-                                <a href="/signup" className="text-decoration-none">Sign Up</a>
-                            </div>
-                            <div className="row justify-content-center mb-4">
-                                <div className="col-6 text-center">
-                                    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-                                        <GoogleLogin
-                                            onSuccess={handleGoogleSuccess}
-                                            onError={handleGoogleFailure}
-                                        />
-
-                                    </GoogleOAuthProvider>
+                            <form onSubmit={handleFormSubmit} noValidate>
+                                <div className="mb-3">
+                                    <label className="form-label small fw-bold text-secondary">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        className={`form-control form-control-lg rounded-3 fs-6 ${
+                                            errors.email ? "is-invalid" : ""
+                                        }`}
+                                        type="email"
+                                        name="email"
+                                        placeholder="name@example.com"
+                                        onChange={handleChange}
+                                    />
+                                    {errors.email && (
+                                        <div className="invalid-feedback">
+                                            {errors.email}
+                                        </div>
+                                    )}
                                 </div>
+
+                                <div className="mb-4">
+                                    <label className="form-label small fw-bold text-secondary">
+                                        Password
+                                    </label>
+                                    <input
+                                        className={`form-control form-control-lg rounded-3 fs-6 ${
+                                            errors.password ? "is-invalid" : ""
+                                        }`}
+                                        type="password"
+                                        name="password"
+                                        placeholder="Enter your password"
+                                        onChange={handleChange}
+                                    />
+                                    {errors.password && (
+                                        <div className="invalid-feedback">
+                                            {errors.password}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="d-flex justify-content-center">
+                                    <button className="btn btn-primary w-100 btn-md rounded-pill fw-bold shadow-sm mb-4">
+                                        Sign In
+                                    </button>
+                                </div>
+                            </form>
+
+                            {/* Divider */}
+                            <div className="d-flex align-items-center my-2">
+                                <hr className="flex-grow-1 text-muted" />
+                                <span className="mx-3 text-muted small fw-bold">
+                                    OR
+                                </span>
+                                <hr className="flex-grow-1 text-muted" />
                             </div>
+
+                            {/* Google Social Login */}
+                            <div className="d-flex justify-content-center w-100">
+                                <GoogleOAuthProvider
+                                    clientId={
+                                        import.meta.env.VITE_GOOGLE_CLIENT_ID
+                                    }
+                                >
+                                    <GoogleLogin
+                                        onSuccess={handleGoogleSuccess}
+                                        onError={handleGoogleFailure}
+                                        theme="outline"
+                                        shape="pill"
+                                        text="signin_with"
+                                        width="500"
+                                    />
+                                </GoogleOAuthProvider>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -157,4 +214,3 @@ function Login({setUser}) {
 }
 
 export default Login;
-
