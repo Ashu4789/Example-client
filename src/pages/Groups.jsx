@@ -3,6 +3,7 @@ import { serverEndpoint } from "../config/appConfig";
 import { useEffect, useState } from "react";
 import GroupCard from "../components/GroupCard";
 import CreateGroupModal from "../components/CreateGroupModal";
+import PermissionGate from "../components/rbac/PermissionGate";
 import Can from "../components/Can";
 
 function Groups() {
@@ -128,7 +129,7 @@ function Groups() {
                                 <option value="oldest">Oldest First</option>
                             </select>
                         </div>
-                        <Can requiredPermission="canCreateGroups">
+                        <PermissionGate permission="group:create">
                             <button
                                 className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm text-nowrap"
                                 onClick={() => setShow(true)}
@@ -136,7 +137,7 @@ function Groups() {
                                 <i className="bi bi-plus-lg me-2"></i>
                                 New Group
                             </button>
-                        </Can>
+                        </PermissionGate>
                     </div>
                 </div>
             </div>
@@ -159,14 +160,14 @@ function Groups() {
                         You haven't joined any groups yet. Create a group to
                         start splitting bills with your friends or roommates!
                     </p>
-                    <Can requiredPermission="canCreateGroups">
+                    <PermissionGate permission="group:create">
                         <button
                             className="btn btn-outline-primary rounded-pill px-4"
                             onClick={() => setShow(true)}
                         >
                             Get Started
                         </button>
-                    </Can>
+                    </PermissionGate>
                 </div>
             )}
 

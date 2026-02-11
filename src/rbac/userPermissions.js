@@ -1,44 +1,35 @@
 import { useSelector } from "react-redux";
 
 const ROLE_PERMISSIONS = {
-    admin: {
-        canCreateUsers: true,
-        canDeleteUsers: true,
-        canUpdateUsers: true,
-        canViewUsers: true,
-        canCreateGroups: true,
-        canUpdateGroups: true,
-        canDeleteGroups: true,
-        canViewGroups: true,
-    },
-    manager: {
-        canCreateUsers: false,
-        canDeleteUsers: false,
-        canUpdateUsers: true,
-        canViewUsers: true,
-        canCreateGroups: true,
-        canUpdateGroups: true,
-        canDeleteGroups: false,
-        canViewGroups: true,
-    },
-    viewer: {
-        canCreateUsers: false,
-        canDeleteUsers: false,
-        canUpdateUsers: false,
-        canViewUsers: true,
-        canCreateGroups: false,
-        canUpdateGroups: false,
-        canDeleteGroups: false,
-        canViewGroups: true,
-    },
+    admin: [
+        'user:create',
+        'user:update',
+        'user:delete',
+        'user:view',
+        'group:create',
+        'group:update',
+        'group:delete',
+        'group:view'
+    ],
+    manager: [
+        'user:view',
+        'group:create',
+        'group:update',
+        'group:view'
+    ],
+    viewer: [
+        'user:view',
+        'group:view'
+    ],
 };
 
-export const usePermission = () => {
-    const user = useSelector((state) => state.userDetails);
-    if (user) {
-        return ROLE_PERMISSIONS[user.role] || {};
+export const useHasPermission = (permission) => {
+    const userDetails = useSelector((state) => state.userDetails);
+    if (userDetails) {
+        const userPermissions = ROLE_PERMISSIONS[userDetails.role?.toLowerCase()] || [];
+        return userPermissions.includes(permission);
     }
-    return {};
+    return false;
 };
 
 export default ROLE_PERMISSIONS;

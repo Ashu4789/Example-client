@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { serverEndpoint } from "../config/appConfig";
 import axios from "axios";
-import { usePermission } from "../rbac/userPermissions";
-import Can from "../components/Can";
+import { useHasPermission } from "../rbac/userPermissions";
+import PermissionGate from "../components/rbac/PermissionGate";
 
 function ManageUsers() {
     const [errors, setErrors] = useState({});
@@ -17,7 +17,10 @@ function ManageUsers() {
         role: "Select",
     });
 
-    const permissions = usePermission();
+    const canCreateUsers = useHasPermission("user:create");
+    const canUpdateUsers = useHasPermission("user:update");
+    const canDeleteUsers = useHasPermission("user:delete");
+    const canViewUsers = useHasPermission("user:view");
 
     const fetchUsers = async () => {
         try {
@@ -194,8 +197,8 @@ function ManageUsers() {
 
             <div className="row">
                 {/* Add/Edit user form */}
-                {(permissions.canCreateUsers ||
-                    (editingUser && permissions.canUpdateUsers)) && (
+                {(canCreateUsers ||
+                    (editingUser && canUpdateUsers)) && (
                         <div className="col-md-3">
                             <div className="card shadow-sm">
                                 <div className="card-header d-flex justify-content-between align-items-center">
@@ -318,8 +321,8 @@ function ManageUsers() {
                 {/* View users table */}
                 <div
                     className={
-                        permissions.canCreateUsers ||
-                            (editingUser && permissions.canUpdateUsers)
+                        canCreateUsers ||
+                            (editingUser && canUpdateUsers)
                             ? "col-md-9"
                             : "col-md-12"
                     }
@@ -343,8 +346,8 @@ function ManageUsers() {
                                             <th className="text-center">
                                                 Role
                                             </th>
-                                            {(permissions.canUpdateUsers ||
-                                                permissions.canDeleteUsers) && (
+                                            {(canUpdateUsers ||
+                                                canDeleteUsers) && (
                                                     <th className="text-center">
                                                         Actions
                                                     </th>
@@ -376,10 +379,10 @@ function ManageUsers() {
                                                     <td className="align-middle">
                                                         {user.role}
                                                     </td>
-                                                    {(permissions.canUpdateUsers ||
-                                                        permissions.canDeleteUsers) && (
+                                                    {(canUpdateUsers ||
+                                                        canDeleteUsers) && (
                                                             <td className="align-middle">
-                                                                {permissions.canUpdateUsers && (
+                                                                <PermissionGate permission="user:update">
                                                                     <button
                                                                         className="btn btn-link text-primary"
                                                                         onClick={() =>
@@ -390,8 +393,8 @@ function ManageUsers() {
                                                                     >
                                                                         Edit
                                                                     </button>
-                                                                )}
-                                                                {permissions.canDeleteUsers && (
+                                                                </PermissionGate>
+                                                                <PermissionGate permission="user:delete">
                                                                     <button
                                                                         className="btn btn-link text-danger"
                                                                         onClick={() =>
@@ -402,7 +405,7 @@ function ManageUsers() {
                                                                     >
                                                                         Delete
                                                                     </button>
-                                                                )}
+                                                                </PermissionGate>
                                                             </td>
                                                         )}
                                                 </tr>

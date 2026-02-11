@@ -2,15 +2,27 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import AppLayout from "../components/AppLayout";
 import UnauthorizedAccess from "../components/errors/UnauthorizedAccess";
+import { useHasPermission } from "./userPermissions";
 
-function ProtectedRoute({ roles, children }) {
-    const user = useSelector((state) => state.userDetails);
+function ProtectedRoute({ roles, permission, children }) {
+    const userDetails = useSelector((state) => state.userDetails);
+    const hasPermission = useHasPermission(permission);
 
-    if (!user) {
+    if (!userDetails) {
         return <Navigate to="/login" />;
     }
 
-    if (roles && !roles.includes(user.role)) {
+    // Role check (legacy)
+    if (roles && !roles.includes(userDetails.role)) {
+        return (
+            <AppLayout>
+                <UnauthorizedAccess />
+            </AppLayout>
+        );
+    }
+
+    // Permission check (preferred)
+    if (permission && !hasPermission) {
         return (
             <AppLayout>
                 <UnauthorizedAccess />

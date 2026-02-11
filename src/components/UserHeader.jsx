@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { NavDropdown, Nav } from "react-bootstrap";
+import PermissionGate from "./rbac/PermissionGate";
 
 function UserHeader() {
     const user = useSelector((state) => state.userDetails);
@@ -71,10 +72,12 @@ function UserHeader() {
                                     {user?.email}
                                 </p>
                             </li>
-                            <NavDropdown.Item as={Link} to="/manage-users" className="py-2 fw-medium">
-                                <i className="bi bi-person-check me-2"></i>{" "}
-                                Manage Users
-                            </NavDropdown.Item>
+                            <PermissionGate permission="user:view">
+                                <NavDropdown.Item as={Link} to="/manage-users" className="py-2 fw-medium">
+                                    <i className="bi bi-person-check me-2"></i>{" "}
+                                    Manage Users
+                                </NavDropdown.Item>
+                            </PermissionGate>
                             <NavDropdown.Divider className="m-0" />
                             <NavDropdown.Item as={Link} to="/logout" className="py-2 text-danger fw-medium">
                                 <i className="bi bi-box-arrow-right me-2"></i>{" "}
