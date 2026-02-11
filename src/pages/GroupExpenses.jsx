@@ -17,13 +17,12 @@ function GroupExpenses() {
 
     const fetchData = async () => {
         try {
+            console.log("Fetching data for groupId:", groupId);
             setLoading(true);
 
-            // 1. Fetch all user groups to find the current one (reusing existing endpoint)
-            // Ideally should have a getGroupById endpoint, but this works with existing API
-            const groupsRes = await axios.get(`${serverEndpoint}/groups/my-groups`, { withCredentials: true });
-            const currentGroup = groupsRes.data.find(g => g._id === groupId);
-            setGroup(currentGroup);
+            // 1. Fetch Group Details
+            const groupRes = await axios.get(`${serverEndpoint}/groups/${groupId}`, { withCredentials: true });
+            setGroup(groupRes.data);
 
             // 2. Fetch Expenses
             const expensesRes = await axios.get(`${serverEndpoint}/expenses/group/${groupId}`, { withCredentials: true });
