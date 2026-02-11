@@ -9,13 +9,16 @@ const CreateExpenseModal = ({ show, onHide, groupId, groupMembers, onSuccess }) 
     const [paidBy, setPaidBy] = useState('');
     const [splitType, setSplitType] = useState('equal'); // equal, unequal
     const [splits, setSplits] = useState([]);
+    const [includedUsers, setIncludedUsers] = useState([]); // Array of emails
     const [error, setError] = useState('');
 
     useEffect(() => {
         if (show && groupMembers.length > 0) {
             // Default payer to first member or current user if available
-            // For now, simple default
             if (!paidBy) setPaidBy(groupMembers[0]);
+
+            // Initialize included users (all by default)
+            setIncludedUsers(groupMembers);
 
             // Initialize splits
             const initialAmount = amount ? parseFloat(amount) / groupMembers.length : 0;
@@ -23,17 +26,40 @@ const CreateExpenseModal = ({ show, onHide, groupId, groupMembers, onSuccess }) 
         }
     }, [show, groupMembers]);
 
-    // Update splits when total amount changes or split type changes
+    // Update splits when amount, splitType, or includedUsers changes
     useEffect(() => {
-        if (splitType === 'equal' && amount) {
-            const splitAmount = parseFloat(amount) / groupMembers.length;
-            setSplits(groupMembers.map(email => ({ email, amount: splitAmount })));
+        if (amount && includedUsers.length > 0) {
+            if (splitType === 'equal') {
+                const splitAmount = parseFloat(amount) / includedUsers.length;
+                setSplits(groupMembers.map(email => ({
+                    email,
+                    amount: includedUsers.includes(email) ? splitAmount : 0
+                })));
+            } else {
+                // For unequal, ensures excluded users have 0
+                setSplits(prev => prev.map(s => ({
+                    ...s,
+                    amount: includedUsers.includes(s.email) ? s.amount : 0
+                })));
+            }
+        } else if (amount && includedUsers.length === 0) {
+            setSplits(groupMembers.map(email => ({ email, amount: 0 })));
         }
-    }, [amount, splitType, groupMembers]);
+    }, [amount, splitType, includedUsers, groupMembers]);
 
     const handleSplitChange = (email, value) => {
         const newAmount = parseFloat(value) || 0;
         setSplits(prev => prev.map(s => s.email === email ? { ...s, amount: newAmount } : s));
+    };
+
+    const handleToggleInclusion = (email) => {
+        setIncludedUsers(prev => {
+            if (prev.includes(email)) {
+                return prev.filter(e => e !== email);
+            } else {
+                return [...prev, email];
+            }
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -45,11 +71,22 @@ const CreateExpenseModal = ({ show, onHide, groupId, groupMembers, onSuccess }) 
             return;
         }
 
-        const totalSplit = splits.reduce((acc, curr) => acc + curr.amount, 0);
-        if (Math.abs(totalSplit - parseFloat(amount)) > 0.1) { // Allow small float diff
-            setError(`Split amounts (${totalSplit}) must match total amount (${amount})`);
+        if (includedUsers.length === 0) {
+            setError('At least one member must be included in the split.');
             return;
         }
+
+        const totalSplit = splits.reduce((acc, curr) => acc + curr.amount, 0);
+        if (Math.abs(totalSplit - parseFloat(amount)) > 0.1) { // Allow small float diff
+            setError(`Split amounts (${totalSplit.toFixed(2)}) must match total amount (${parseFloat(amount).toFixed(2)})`);
+            return;
+        }
+
+        // Filter out splits with 0 amount -> Actually, wait. The server logic:
+        // "Verify split sum matches total amount". If I exclude users (0 amount), the sum should still match total.
+        // And stored splits should likely only contain those who owe money.
+        // Let's filter out users with 0 amount to keep DB clean.
+        const finalSplits = splits.filter(s => s.amount > 0);
 
         try {
             await axios.post(`${serverEndpoint}/expenses/add`, {
@@ -57,7 +94,7 @@ const CreateExpenseModal = ({ show, onHide, groupId, groupMembers, onSuccess }) 
                 amount: parseFloat(amount),
                 groupId,
                 paidBy,
-                splits
+                splits: finalSplits
             }, { withCredentials: true });
 
             onSuccess();
@@ -66,6 +103,7 @@ const CreateExpenseModal = ({ show, onHide, groupId, groupMembers, onSuccess }) 
             setDescription('');
             setAmount('');
             setSplitType('equal');
+            setIncludedUsers(groupMembers); // Reset to all
         } catch (err) {
             console.error(err);
             setError(err.response?.data?.message || 'Failed to add expense');
@@ -137,13 +175,24 @@ const CreateExpenseModal = ({ show, onHide, groupId, groupMembers, onSuccess }) 
                         <div className="bg-light p-3 rounded">
                             {splits.map((split, index) => (
                                 <div key={split.email} className="d-flex justify-content-between align-items-center mb-2">
-                                    <span className="small text-truncate" style={{ maxWidth: '150px' }}>{split.email}</span>
+                                    <div className="form-check">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            checked={includedUsers.includes(split.email)}
+                                            onChange={() => handleToggleInclusion(split.email)}
+                                            id={`check-${split.email}`}
+                                        />
+                                        <label className="form-check-label small text-truncate" style={{ maxWidth: '150px' }} htmlFor={`check-${split.email}`}>
+                                            {split.email}
+                                        </label>
+                                    </div>
                                     <InputGroup style={{ width: '120px' }} size="sm">
                                         <InputGroup.Text>₹</InputGroup.Text>
                                         <Form.Control
                                             type="number"
-                                            value={splitType === 'equal' ? split.amount.toFixed(2) : split.amount}
-                                            disabled={splitType === 'equal'}
+                                            value={split.amount.toFixed(2)}
+                                            disabled={splitType === 'equal' || !includedUsers.includes(split.email)}
                                             onChange={(e) => handleSplitChange(split.email, e.target.value)}
                                         />
                                     </InputGroup>
