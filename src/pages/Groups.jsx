@@ -3,6 +3,7 @@ import { serverEndpoint } from "../config/appConfig";
 import { useEffect, useState } from "react";
 import GroupCard from "../components/GroupCard";
 import CreateGroupModal from "../components/CreateGroupModal";
+import Can from "../components/Can";
 
 function Groups() {
     const [groups, setGroups] = useState([]);
@@ -20,6 +21,24 @@ function Groups() {
             console.log(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteGroup = async (groupId) => {
+        if (window.confirm("Are you sure you want to delete this group?")) {
+            try {
+                await axios.post(
+                    `${serverEndpoint}/groups/delete`,
+                    { groupId },
+                    { withCredentials: true }
+                );
+                setGroups((prevGroups) =>
+                    prevGroups.filter((g) => g._id !== groupId)
+                );
+            } catch (error) {
+                console.log(error);
+                alert("Unable to delete group");
+            }
         }
     };
 
@@ -73,13 +92,15 @@ function Groups() {
                     </p>
                 </div>
                 <div className="col-md-4 text-center text-md-end">
-                    <button
-                        className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm"
-                        onClick={() => setShow(true)}
-                    >
-                        <i className="bi bi-plus-lg me-2"></i>
-                        New Group
-                    </button>
+                    <Can requiredPermission="canCreateGroups">
+                        <button
+                            className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm"
+                            onClick={() => setShow(true)}
+                        >
+                            <i className="bi bi-plus-lg me-2"></i>
+                            New Group
+                        </button>
+                    </Can>
                 </div>
             </div>
 
@@ -101,12 +122,14 @@ function Groups() {
                         You haven't joined any groups yet. Create a group to
                         start splitting bills with your friends or roommates!
                     </p>
-                    <button
-                        className="btn btn-outline-primary rounded-pill px-4"
-                        onClick={() => setShow(true)}
-                    >
-                        Get Started
-                    </button>
+                    <Can requiredPermission="canCreateGroups">
+                        <button
+                            className="btn btn-outline-primary rounded-pill px-4"
+                            onClick={() => setShow(true)}
+                        >
+                            Get Started
+                        </button>
+                    </Can>
                 </div>
             )}
 
@@ -117,6 +140,7 @@ function Groups() {
                             <GroupCard
                                 group={group}
                                 onUpdate={handleGroupUpdateSuccess}
+                                onDelete={handleDeleteGroup}
                             />
                         </div>
                     ))}

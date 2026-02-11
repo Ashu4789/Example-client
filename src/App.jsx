@@ -13,6 +13,8 @@ import { SET_USER } from "./redux/user/action";
 import Groups from "./pages/Groups";
 import GroupExpenses from "./pages/GroupExpenses";
 import ManageUsers from "./pages/ManageUsers";
+import ProtectedRoute from "./rbac/ProtectedRoute";
+import UnauthorizedAccess from "./components/errors/UnauthorizedAccess";
 
 function App() {
   const dispatch = useDispatch();
@@ -114,9 +116,11 @@ function App() {
         path="/manage-users"
         element={
           userDetails ? (
-            <UserLayout>
-              <ManageUsers />
-            </UserLayout>
+            <ProtectedRoute roles={["admin", "manager", "viewer"]}>
+              <UserLayout>
+                <ManageUsers />
+              </UserLayout>
+            </ProtectedRoute>
           ) : (
             <Navigate to="/login" />
           )
@@ -126,6 +130,21 @@ function App() {
       <Route
         path="/logout"
         element={userDetails ? <Logout /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="/unauthorized-access"
+        element={
+          userDetails ? (
+            <UserLayout>
+              <UnauthorizedAccess />
+            </UserLayout>
+          ) : (
+            <AppLayout>
+              <UnauthorizedAccess />
+            </AppLayout>
+          )
+        }
       />
     </Routes>
   );

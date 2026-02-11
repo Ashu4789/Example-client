@@ -2,8 +2,9 @@ import axios from "axios";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { serverEndpoint } from "../config/appConfig";
+import Can from "./Can";
 
-function GroupCard({ group, onUpdate }) {
+function GroupCard({ group, onUpdate, onDelete }) {
     const [showMembers, setShowMembers] = useState(false);
     const [memberEmail, setMemberEmail] = useState("");
     const [errors, setErrors] = useState({});
@@ -37,11 +38,22 @@ function GroupCard({ group, onUpdate }) {
                     <div className="bg-primary bg-opacity-10 p-2 rounded-3 text-primary mb-2">
                         <i className="bi bi-collection-fill fs-4"></i>
                     </div>
-                    {group.adminEmail && (
-                        <span className="badge rounded-pill bg-light text-dark border fw-normal small">
-                            Admin: {group.adminEmail.split("@")[0]}
-                        </span>
-                    )}
+                    <div className="d-flex align-items-center gap-2">
+                        {group.adminEmail && (
+                            <span className="badge rounded-pill bg-light text-dark border fw-normal small">
+                                Admin: {group.adminEmail.split("@")[0]}
+                            </span>
+                        )}
+                        <Can requiredPermission="canDeleteGroups">
+                            <button
+                                className="btn btn-link text-danger p-0"
+                                onClick={() => onDelete(group._id)}
+                                title="Delete Group"
+                            >
+                                <i className="bi bi-trash"></i>
+                            </button>
+                        </Can>
+                    </div>
                 </div>
 
                 <h5 className="fw-bold mb-1 text-dark text-truncate">
@@ -110,26 +122,28 @@ function GroupCard({ group, onUpdate }) {
                     </div>
                 )}
 
-                <div className="mt-auto pt-3 border-top">
-                    <label className="form-label extra-small fw-bold text-uppercase text-muted mb-2">
-                        Invite a Friend
-                    </label>
-                    <div className="input-group input-group-sm">
-                        <input
-                            type="email"
-                            className="form-control bg-light border-0 px-3"
-                            placeholder="email@example.com"
-                            value={memberEmail}
-                            onChange={(e) => setMemberEmail(e.target.value)}
-                        />
-                        <button
-                            className="btn btn-primary px-3 fw-bold"
-                            onClick={handleAddMember}
-                        >
-                            Add
-                        </button>
+                <Can requiredPermission="canUpdateGroups">
+                    <div className="mt-auto pt-3 border-top">
+                        <label className="form-label extra-small fw-bold text-uppercase text-muted mb-2">
+                            Invite a Friend
+                        </label>
+                        <div className="input-group input-group-sm">
+                            <input
+                                type="email"
+                                className="form-control bg-light border-0 px-3"
+                                placeholder="email@example.com"
+                                value={memberEmail}
+                                onChange={(e) => setMemberEmail(e.target.value)}
+                            />
+                            <button
+                                className="btn btn-primary px-3 fw-bold"
+                                onClick={handleAddMember}
+                            >
+                                Add
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </Can>
             </div>
         </div>
     );
