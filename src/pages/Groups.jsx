@@ -9,14 +9,25 @@ function Groups() {
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [show, setShow] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [limit, setLimit] = useState(10); // Default limit
+    const [sortBy, setSortBy] = useState('newest');
 
-    const fetchGroups = async () => {
+    const fetchGroups = async (page = 1, currentLimit = limit, currentSortBy = sortBy) => {
         try {
             const response = await axios.get(
-                `${serverEndpoint}/groups/my-groups`,
+                `${serverEndpoint}/groups/my-groups?page=${page}&limit=${currentLimit}&sortBy=${currentSortBy}`,
                 { withCredentials: true }
             );
-            setGroups(response.data.groups || response.data);
+            if (response.data.pagination) {
+                setGroups(response.data.groups);
+                setTotalPages(response.data.pagination.totalPages);
+                setCurrentPage(response.data.pagination.currentPage);
+            } else {
+                // Fallback for non-paginated response or if server format is different
+                setGroups(response.data);
+            }
         } catch (error) {
             console.log(error);
         } finally {
@@ -32,9 +43,8 @@ function Groups() {
                     { groupId },
                     { withCredentials: true }
                 );
-                setGroups((prevGroups) =>
-                    prevGroups.filter((g) => g._id !== groupId)
-                );
+                // Refresh current page
+                fetchGroups(currentPage);
             } catch (error) {
                 console.log(error);
                 alert("Unable to delete group");
@@ -43,21 +53,30 @@ function Groups() {
     };
 
     const handleGroupUpdateSuccess = (data) => {
-        setGroups((prevGroups) => {
-            const exists = prevGroups.some((group) => group._id === data._id);
-            if (exists) {
-                return prevGroups.map((group) =>
-                    group._id === data._id ? data : group
-                );
-            } else {
-                return [data, ...prevGroups];
-            }
-        });
+        // Reload to page 1 to show the new/updated group
+        fetchGroups(1);
     };
 
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setLoading(true);
+            fetchGroups(newPage);
+        }
+    };
+
+    const handleLimitChange = (e) => {
+        const newLimit = parseInt(e.target.value);
+        setLimit(newLimit);
+        setLoading(true);
+        fetchGroups(1, newLimit, sortBy);
+    };
+
+    // Duplicate function removed
+
     useEffect(() => {
-        fetchGroups();
-    }, []);
+        fetchGroups(currentPage, limit, sortBy);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, sortBy]);
 
     if (loading) {
         return (
@@ -92,15 +111,33 @@ function Groups() {
                     </p>
                 </div>
                 <div className="col-md-4 text-center text-md-end">
-                    <Can requiredPermission="canCreateGroups">
-                        <button
-                            className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm"
-                            onClick={() => setShow(true)}
-                        >
-                            <i className="bi bi-plus-lg me-2"></i>
-                            New Group
-                        </button>
-                    </Can>
+                    <div className="d-flex flex-column flex-md-row align-items-center justify-content-end gap-3">
+                        <div className="d-flex align-items-center">
+                            <label htmlFor="sortBy" className="me-2 text-muted fw-bold small text-nowrap">Sort By:</label>
+                            <select
+                                id="sortBy"
+                                className="form-select form-select-sm rounded-pill"
+                                value={sortBy}
+                                onChange={(e) => {
+                                    setSortBy(e.target.value);
+                                    setCurrentPage(1); // Reset to page 1
+                                }}
+                                style={{ minWidth: "130px" }}
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                        <Can requiredPermission="canCreateGroups">
+                            <button
+                                className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm text-nowrap"
+                                onClick={() => setShow(true)}
+                            >
+                                <i className="bi bi-plus-lg me-2"></i>
+                                New Group
+                            </button>
+                        </Can>
+                    </div>
                 </div>
             </div>
 
@@ -134,17 +171,77 @@ function Groups() {
             )}
 
             {groups.length > 0 && (
-                <div className="row g-4 animate__animated animate__fadeIn">
-                    {groups.map((group) => (
-                        <div className="col-md-6 col-lg-4" key={group._id}>
-                            <GroupCard
-                                group={group}
-                                onUpdate={handleGroupUpdateSuccess}
-                                onDelete={handleDeleteGroup}
-                            />
+                <>
+                    <div className="row g-4 animate__animated animate__fadeIn">
+                        {groups.map((group) => (
+                            <div className="col-md-6 col-lg-4" key={group._id}>
+                                <GroupCard
+                                    group={group}
+                                    onUpdate={handleGroupUpdateSuccess}
+                                    onDelete={handleDeleteGroup}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="d-flex justify-content-between align-items-center mt-5">
+                        <div className="d-flex align-items-center">
+                            <label htmlFor="pageSize" className="me-2 text-muted small">Items per page:</label>
+                            <select
+                                id="pageSize"
+                                className="form-select form-select-sm"
+                                value={limit}
+                                onChange={handleLimitChange}
+                                style={{ width: "70px" }}
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
                         </div>
-                    ))}
-                </div>
+
+                        {totalPages > 1 && (
+                            <nav aria-label="Page navigation">
+                                <ul className="pagination pagination-sm mb-0">
+                                    <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                                        <button
+                                            className="page-link"
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            aria-label="Previous"
+                                        >
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </button>
+                                    </li>
+                                    {[...Array(totalPages)].map((_, index) => (
+                                        <li
+                                            key={index}
+                                            className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                                        >
+                                            <button
+                                                className="page-link"
+                                                onClick={() => handlePageChange(index + 1)}
+                                            >
+                                                {index + 1}
+                                            </button>
+                                        </li>
+                                    ))}
+                                    <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                                        <button
+                                            className="page-link"
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            aria-label="Next"
+                                        >
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        )}
+                    </div>
+                </>
             )}
 
             <CreateGroupModal
