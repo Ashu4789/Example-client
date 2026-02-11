@@ -60,16 +60,21 @@ function Login() {
                     body,
                     config
                 );
-                // setUser(response.data.user);
                 dispatch({
                     type: SET_USER,
                     payload: response.data.user,
                 });
             } catch (error) {
                 console.log(error);
-                setErrors({
-                    message: "Something went wrong, please try again",
-                });
+                if (error.response && error.response.status === 400) {
+                    setErrors({
+                        message: error.response.data.message || "Invalid email or password",
+                    });
+                } else {
+                    setErrors({
+                        message: "Something went wrong, please try again",
+                    });
+                }
             }
         }
     };
@@ -136,9 +141,8 @@ function Login() {
                                         Email Address
                                     </label>
                                     <input
-                                        className={`form-control form-control-lg rounded-3 fs-6 ${
-                                            errors.email ? "is-invalid" : ""
-                                        }`}
+                                        className={`form-control form-control-lg rounded-3 fs-6 ${errors.email ? "is-invalid" : ""
+                                            }`}
                                         type="email"
                                         name="email"
                                         placeholder="name@example.com"
@@ -156,9 +160,8 @@ function Login() {
                                         Password
                                     </label>
                                     <input
-                                        className={`form-control form-control-lg rounded-3 fs-6 ${
-                                            errors.password ? "is-invalid" : ""
-                                        }`}
+                                        className={`form-control form-control-lg rounded-3 fs-6 ${errors.password ? "is-invalid" : ""
+                                            }`}
                                         type="password"
                                         name="password"
                                         placeholder="Enter your password"
@@ -169,6 +172,14 @@ function Login() {
                                             {errors.password}
                                         </div>
                                     )}
+                                    <div className="text-end mt-1">
+                                        <Link
+                                            to="/forgot-password"
+                                            className="text-primary small text-decoration-none fw-bold"
+                                        >
+                                            Forgot Password?
+                                        </Link>
+                                    </div>
                                 </div>
 
                                 <div className="d-flex justify-content-center">

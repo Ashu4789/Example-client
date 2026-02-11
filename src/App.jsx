@@ -15,6 +15,8 @@ import GroupExpenses from "./pages/GroupExpenses";
 import ManageUsers from "./pages/ManageUsers";
 import ProtectedRoute from "./rbac/ProtectedRoute";
 import UnauthorizedAccess from "./components/errors/UnauthorizedAccess";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const dispatch = useDispatch();
@@ -130,6 +132,16 @@ function App() {
       <Route
         path="/logout"
         element={userDetails ? <Logout /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="/forgot-password"
+        element={<AppLayout><ForgotPassword /></AppLayout>}
+      />
+
+      <Route
+        path="/reset-password/:token"
+        element={<AppLayout><ResetPassword /></AppLayout>}
       />
 
       <Route
