@@ -16,7 +16,7 @@ function Groups() {
                 `${serverEndpoint}/groups/my-groups`,
                 { withCredentials: true }
             );
-            setGroups(response.data);
+            setGroups(response.data.groups || response.data);
         } catch (error) {
             console.log(error);
         } finally {
