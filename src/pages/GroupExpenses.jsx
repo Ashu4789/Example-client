@@ -5,6 +5,7 @@ import { serverEndpoint } from "../config/appConfig";
 import ExpenseSummary from "../components/ExpenseSummary";
 import CreateExpenseModal from "../components/CreateExpenseModal";
 import ExpenseList from "../components/ExpenseList";
+import { GroupRoleGate } from "../rbac/GroupRoleGate";
 
 function GroupExpenses() {
     const { groupId } = useParams();
@@ -99,20 +100,32 @@ function GroupExpenses() {
                     <p className="text-muted lead mb-4">{group.description || "Manage your shared expenses."}</p>
 
                     <div className="d-flex flex-wrap gap-2 mb-4">
-                        {group.membersEmail.map((email, idx) => (
+                        {group.members?.map((member, idx) => (
                             <span key={idx} className="badge bg-light text-dark border fw-normal py-2 px-3 rounded-pill">
-                                <i className="bi bi-person me-1 text-secondary"></i> {email}
+                                <i className="bi bi-person me-1 text-secondary"></i> {member.email} ({member.role})
                             </span>
                         ))}
                     </div>
                 </div>
                 <div className="col-lg-4 text-lg-end">
-                    <button
-                        className="btn btn-primary btn-lg rounded-pill px-4 shadow-sm"
-                        onClick={() => setShowAddModal(true)}
-                    >
-                        <i className="bi bi-plus-lg me-2"></i> Add Expense
-                    </button>
+                    <GroupRoleGate group={group} allowedRoles={['admin', 'manager']}>
+                        <div className="d-flex gap-2 justify-content-lg-end">
+                            <GroupRoleGate group={group} allowedRoles={['admin']}>
+                                <Link
+                                    to="/manage-users"
+                                    className="btn btn-outline-secondary btn-lg rounded-pill px-4 shadow-sm"
+                                >
+                                    <i className="bi bi-person-gear me-2"></i> Manage Users
+                                </Link>
+                            </GroupRoleGate>
+                            <button
+                                className="btn btn-primary btn-lg rounded-pill px-4 shadow-sm"
+                                onClick={() => setShowAddModal(true)}
+                            >
+                                <i className="bi bi-plus-lg me-2"></i> Add Expense
+                            </button>
+                        </div>
+                    </GroupRoleGate>
                 </div>
             </div>
 
@@ -122,6 +135,7 @@ function GroupExpenses() {
                     <ExpenseSummary
                         summary={summary}
                         onSettle={handleSettleUp}
+                        group={group}
                     />
                 </div>
 
@@ -136,7 +150,7 @@ function GroupExpenses() {
                 show={showAddModal}
                 onHide={() => setShowAddModal(false)}
                 groupId={groupId}
-                groupMembers={group.membersEmail}
+                groupMembers={group.members?.map(m => m.email) || []}
                 onSuccess={fetchData}
             />
         </div>

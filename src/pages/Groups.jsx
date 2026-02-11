@@ -39,9 +39,8 @@ function Groups() {
     const handleDeleteGroup = async (groupId) => {
         if (window.confirm("Are you sure you want to delete this group?")) {
             try {
-                await axios.post(
-                    `${serverEndpoint}/groups/delete`,
-                    { groupId },
+                await axios.delete(
+                    `${serverEndpoint}/groups/${groupId}`,
                     { withCredentials: true }
                 );
                 // Refresh current page

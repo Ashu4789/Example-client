@@ -1,13 +1,22 @@
 import axios from "axios";
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { serverEndpoint } from "../config/appConfig";
 import Can from "./Can";
+import { GroupRoleGate } from "../rbac/GroupRoleGate";
 
 function GroupCard({ group, onUpdate, onDelete }) {
+    const userDetails = useSelector(state => state.userDetails);
     const [showMembers, setShowMembers] = useState(false);
     const [memberEmail, setMemberEmail] = useState("");
     const [errors, setErrors] = useState({});
+
+    const userEmail = userDetails?.email?.toLowerCase() || '';
+    const myRole = group.members?.find(m => m.email?.toLowerCase() === userEmail)?.role
+        || (group.adminEmail?.toLowerCase() === userEmail ? 'admin' : 'viewer');
+
+    const [selectedRole, setSelectedRole] = useState("viewer");
 
     const handleShowMember = () => setShowMembers(!showMembers);
 
@@ -19,7 +28,7 @@ function GroupCard({ group, onUpdate, onDelete }) {
                 `${serverEndpoint}/groups/members/add`,
                 {
                     groupId: group._id,
-                    emails: [memberEmail],
+                    members: [{ email: memberEmail, role: selectedRole }],
                 },
                 { withCredentials: true }
             );
@@ -27,7 +36,25 @@ function GroupCard({ group, onUpdate, onDelete }) {
             onUpdate(response.data);
         } catch (error) {
             console.log(error);
-            setErrors({ message: "Unable to add member" });
+            setErrors({ message: error.response?.data?.message || "Unable to add member" });
+        }
+    };
+
+    const handleUpdateRole = async (email, newRole) => {
+        try {
+            const response = await axios.patch(
+                `${serverEndpoint}/groups/members/role`,
+                {
+                    groupId: group._id,
+                    email,
+                    newRole
+                },
+                { withCredentials: true }
+            );
+            onUpdate(response.data);
+        } catch (error) {
+            console.log(error);
+            alert("Failed to update role");
         }
     };
 
@@ -39,20 +66,22 @@ function GroupCard({ group, onUpdate, onDelete }) {
                         <i className="bi bi-collection-fill fs-4"></i>
                     </div>
                     <div className="d-flex align-items-center gap-2">
-                        {group.adminEmail && (
-                            <span className="badge rounded-pill bg-light text-dark border fw-normal small">
-                                Admin: {group.adminEmail.split("@")[0]}
-                            </span>
-                        )}
-                        <Can requiredPermission="canDeleteGroups">
+                        <span className={`badge rounded-pill ${myRole === 'admin' ? 'bg-primary' : (myRole === 'manager' ? 'bg-success' : 'bg-info')} text-white border-0 fw-bold small`}>
+                            Your Role: {myRole.toUpperCase()}
+                        </span>
+                        <GroupRoleGate group={group} allowedRoles={['admin']}>
                             <button
-                                className="btn btn-link text-danger p-0"
-                                onClick={() => onDelete(group._id)}
+                                className="btn btn-link text-danger p-0 border-0"
+                                onClick={() => {
+                                    if (window.confirm("Are you sure you want to delete this group?")) {
+                                        onDelete(group._id);
+                                    }
+                                }}
                                 title="Delete Group"
                             >
                                 <i className="bi bi-trash"></i>
                             </button>
-                        </Can>
+                        </GroupRoleGate>
                     </div>
                 </div>
 
@@ -65,7 +94,7 @@ function GroupCard({ group, onUpdate, onDelete }) {
                     onClick={handleShowMember}
                 >
                     <i className={`bi bi-people-fill me-1`}></i>
-                    {group.membersEmail.length} Members{" "}
+                    {group.members?.length || 0} Members{" "}
                     {showMembers ? "▴" : "▾"}
                 </button>
 
@@ -89,27 +118,48 @@ function GroupCard({ group, onUpdate, onDelete }) {
                             className="overflow-auto"
                             style={{ maxHeight: "150px" }}
                         >
-                            {group.membersEmail.map((member, index) => (
+                            {group.members?.map((member, index) => (
                                 <div
                                     key={index}
-                                    className="d-flex align-items-center mb-2 last-child-mb-0"
+                                    className="d-flex align-items-center justify-content-between mb-2 last-child-mb-0"
                                 >
-                                    <div
-                                        className="rounded-circle bg-white border d-flex align-items-center justify-content-center me-2 fw-bold text-primary shadow-sm"
-                                        style={{
-                                            width: "24px",
-                                            height: "24px",
-                                            fontSize: "10px",
-                                        }}
-                                    >
-                                        {member.charAt(0).toUpperCase()}
+                                    <div className="d-flex align-items-center">
+                                        <div
+                                            className="rounded-circle bg-white border d-flex align-items-center justify-content-center me-2 fw-bold text-primary shadow-sm"
+                                            style={{
+                                                width: "24px",
+                                                height: "24px",
+                                                fontSize: "10px",
+                                            }}
+                                        >
+                                            {member.email?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span
+                                            className="small text-dark text-truncate"
+                                            title={member.email}
+                                            style={{ maxWidth: '120px' }}
+                                        >
+                                            {member.email}
+                                        </span>
                                     </div>
-                                    <span
-                                        className="small text-dark text-truncate"
-                                        title={member}
-                                    >
-                                        {member}
-                                    </span>
+                                    <div className="d-flex align-items-center">
+                                        {myRole === 'admin' && member.email !== userDetails.email ? (
+                                            <select
+                                                className="form-select form-select-sm extra-small py-0 border-0 bg-light text-muted"
+                                                style={{ width: 'auto' }}
+                                                value={member.role}
+                                                onChange={(e) => handleUpdateRole(member.email, e.target.value)}
+                                            >
+                                                <option value="viewer">Viewer</option>
+                                                <option value="manager">Manager</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+                                        ) : (
+                                            <span className="badge bg-light text-muted extra-small border-0 py-1">
+                                                {member.role}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -122,7 +172,7 @@ function GroupCard({ group, onUpdate, onDelete }) {
                     </div>
                 )}
 
-                <Can requiredPermission="canUpdateGroups">
+                <GroupRoleGate group={group} allowedRoles={['admin']}>
                     <div className="mt-auto pt-3 border-top">
                         <label className="form-label extra-small fw-bold text-uppercase text-muted mb-2">
                             Invite a Friend
@@ -135,6 +185,16 @@ function GroupCard({ group, onUpdate, onDelete }) {
                                 value={memberEmail}
                                 onChange={(e) => setMemberEmail(e.target.value)}
                             />
+                            <select
+                                className="form-select bg-light border-0 small"
+                                style={{ maxWidth: '100px', fontSize: '12px' }}
+                                value={selectedRole}
+                                onChange={(e) => setSelectedRole(e.target.value)}
+                            >
+                                <option value="viewer">Viewer</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
                             <button
                                 className="btn btn-primary px-3 fw-bold"
                                 onClick={handleAddMember}
@@ -143,7 +203,7 @@ function GroupCard({ group, onUpdate, onDelete }) {
                             </button>
                         </div>
                     </div>
-                </Can>
+                </GroupRoleGate>
             </div>
         </div>
     );
