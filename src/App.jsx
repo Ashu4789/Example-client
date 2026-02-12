@@ -17,6 +17,8 @@ import ProtectedRoute from "./rbac/ProtectedRoute";
 import UnauthorizedAccess from "./components/errors/UnauthorizedAccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import SignUp from "./pages/SignUp";
+import SetPasswordModal from "./components/auth/SetPasswordModal";
 
 function App() {
   const dispatch = useDispatch();
@@ -87,14 +89,31 @@ function App() {
           )
         }
       />
+      <Route
+        path="/signup"
+        element={
+          userDetails ? (
+            <Navigate to="/dashboard" />
+          ) : (
+            <AppLayout>
+              <SignUp />
+            </AppLayout>
+          )
+        }
+      />
 
       <Route
         path="/dashboard"
         element={
           userDetails ? (
-            <UserLayout>
-              <Groups />
-            </UserLayout>
+            <>
+              <UserLayout>
+                <Groups />
+              </UserLayout>
+              {userDetails && !userDetails.hasPassword && (
+                <SetPasswordModal user={userDetails} />
+              )}
+            </>
           ) : (
             <Navigate to="/login" />
           )

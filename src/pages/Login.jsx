@@ -183,9 +183,14 @@ function Login() {
                                 </div>
 
                                 <div className="d-flex justify-content-center">
-                                    <button className="btn btn-primary w-100 btn-md rounded-pill fw-bold shadow-sm mb-4">
+                                    <button className="btn btn-primary w-100 btn-md rounded-pill fw-bold shadow-sm mb-3">
                                         Sign In
                                     </button>
+                                    <div className="text-center">
+                                        <Link to="/signup" className="text-muted small text-decoration-none">
+                                            Don't have an account? <span className="text-primary fw-bold">Sign Up</span>
+                                        </Link>
+                                    </div>
                                 </div>
                             </form>
 

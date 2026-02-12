@@ -112,7 +112,7 @@ function GroupExpenses() {
                         <div className="d-flex gap-2 justify-content-lg-end">
                             <GroupRoleGate group={group} allowedRoles={['admin']}>
                                 <Link
-                                    to="/manage-users"
+                                    to={`/manage-users?groupId=${groupId}`}
                                     className="btn btn-outline-secondary btn-lg rounded-pill px-4 shadow-sm"
                                 >
                                     <i className="bi bi-person-gear me-2"></i> Manage Users
